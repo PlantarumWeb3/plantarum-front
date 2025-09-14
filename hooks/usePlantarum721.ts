@@ -1,5 +1,4 @@
-// hooks/usePlantarum721.ts 
-
+// hooks/usePlantarum721.ts
 import { useState, useEffect, useCallback } from "react";
 import { ethers } from "ethers";
 import Plantarum721ABI from "../abi/Plantarum721.json";
@@ -8,10 +7,10 @@ import { useWallet } from "../src/context/WalletContext";
 
 export function usePlantarum721() {
   const { account, signer } = useWallet();
-  const [contract, setContract] = useState<any>(null); // 👈 forzamos a any
+  const [contract, setContract] = useState<any>(null);
 
   // --------------------------
-  // Init contrato con fallback seguro
+  // Init contrato
   // --------------------------
   useEffect(() => {
     const init = async () => {
@@ -28,7 +27,7 @@ export function usePlantarum721() {
           addresses.Plantarum721,
           Plantarum721ABI,
           signer || base
-        ) as any; // 👈 forzamos a any
+        );
         setContract(c);
       } catch (err) {
         console.error("❌ Error inicializando Plantarum721:", err);
@@ -43,7 +42,7 @@ export function usePlantarum721() {
   // --------------------------
   const mintConservation = useCallback(
     async (to: string, hashId: string, coords: string, tokenURI: string) => {
-      if (!contract || !signer) throw new Error("⚠️ Conecta tu wallet para mintear");
+      if (!contract || !signer) throw new Error("⚠️ Conecta tu wallet");
       const tx = await contract.connect(signer).mintConservation(to, hashId, coords, tokenURI);
       await tx.wait();
       return tx.hash;
@@ -53,7 +52,7 @@ export function usePlantarum721() {
 
   const mintForestAsset = useCallback(
     async (to: string, hashId: string, coords: string, tokenURI: string, price: string) => {
-      if (!contract || !signer) throw new Error("⚠️ Conecta tu wallet para mintear");
+      if (!contract || !signer) throw new Error("⚠️ Conecta tu wallet");
       const value = ethers.parseEther(price);
       const tx = await contract.connect(signer).mintForestAsset(to, hashId, coords, tokenURI, value);
       await tx.wait();
@@ -101,10 +100,10 @@ export function usePlantarum721() {
   // Subastas
   // --------------------------
   const startAuction = useCallback(
-    async (tokenId: number, basePrice: string, durationSeconds: number) => {
+    async (tokenId: number, basePrice: string, durationDays: number) => {
       if (!contract || !signer) throw new Error("⚠️ Conecta tu wallet");
       const value = ethers.parseEther(basePrice);
-      const tx = await contract.connect(signer).startAuction(tokenId, value, durationSeconds);
+      const tx = await contract.connect(signer).startAuction(tokenId, value, durationDays);
       await tx.wait();
       return tx.hash;
     },
@@ -175,6 +174,7 @@ export function usePlantarum721() {
         listed: meta.listed,
         isAuction: meta.isAuction,
         auctionDeadline: Number(meta.auctionDeadline),
+        tipoActivo: meta.tipoActivo,
       };
     },
     [contract]
@@ -194,6 +194,33 @@ export function usePlantarum721() {
     const ids: bigint[] = await contract.getAllTokens();
     return ids.map((id) => Number(id));
   }, [contract]);
+
+  const getTokensByType = useCallback(
+    async (tipo: string) => {
+      if (!contract) return [];
+      const ids: bigint[] = await contract.getTokensByType(tipo);
+      return ids.map((id) => Number(id));
+    },
+    [contract]
+  );
+
+  const getListedTokens = useCallback(async () => {
+    if (!contract) return [];
+    const ids: bigint[] = await contract.getListedTokens();
+    return ids.map((id) => Number(id));
+  }, [contract]);
+
+  const getTokenFull = useCallback(
+    async (tokenId: number) => {
+      if (!contract) return null;
+      const [meta, uri] = await contract.getTokenFull(tokenId);
+      return {
+        ...meta,
+        tokenURI: uri,
+      };
+    },
+    [contract]
+  );
 
   return {
     account,
@@ -217,5 +244,8 @@ export function usePlantarum721() {
     getTokenMeta,
     getTokensByOwner,
     getAllTokens,
+    getTokensByType,
+    getListedTokens,
+    getTokenFull,
   };
 }
