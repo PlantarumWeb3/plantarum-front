@@ -1,4 +1,4 @@
-// src/app/token/carbon/[id]/page.tsx
+// src/app/token/conservation/[id]/page.tsx
 
 "use client";
 
@@ -7,15 +7,15 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { ethers } from "ethers";
 import addresses from "@/utils/addresses_eth";
-import Plantarum1155ABI from "@/abi/Plantarum1155.json";
-import { provider } from "@/utils/web3Config"; // 🔹 provider público
+import Plantarum721ABI from "@/abi/Plantarum721.json";
+import { provider } from "@/utils/web3Config"; // 🔹 provider de solo lectura
 
 interface Meta {
   id: number;
   title?: string;
+  coords?: string;
   estado?: string;
   price?: string;
-  supply?: number;
   owner?: string;
   hashId?: string;
   uri?: string;
@@ -26,7 +26,7 @@ interface Meta {
   provincia?: string;
 }
 
-export default function CarbonAssetDetail() {
+export default function ConservationAssetDetail() {
   const { id } = useParams<{ id: string }>();
   const [meta, setMeta] = useState<Meta | null>(null);
   const [loading, setLoading] = useState(true);
@@ -38,13 +38,14 @@ export default function CarbonAssetDetail() {
         if (!id) return;
 
         const contract = new ethers.Contract(
-          addresses.Plantarum1155,
-          Plantarum1155ABI,
+          addresses.Plantarum721,
+          Plantarum721ABI,
           provider // 🔹 lectura con provider público
         );
 
         // On-chain
-        const uri = await contract.uri(id);
+        const data = await contract.getTokenMeta(id);
+        const uri = await contract.tokenURI(id);
 
         // Off-chain
         let offchain: any = {};
@@ -57,14 +58,14 @@ export default function CarbonAssetDetail() {
 
         setMeta({
           id: Number(id),
-          title: offchain?.titulo || `Crédito de Carbono #${id}`,
+          title: offchain?.titulo || `Conservación #${id}`,
+          coords: offchain?.coords || "No definidas",
           estado: offchain?.estado || "No definido",
-          price: offchain?.price || "0",
-          supply: offchain?.supply || 0,
-          owner: offchain?.owner || "N/A",
-          hashId: offchain?.hashId || "",
+          price: ethers.formatEther(data.price),
+          owner: data.walletOwner,
+          hashId: data.hashId,
           uri,
-          listed: offchain?.listed || false,
+          listed: data.listed,
           image: offchain?.files?.find((f: any) =>
             f.type?.startsWith("image/")
           )?.IpfsHash,
@@ -84,7 +85,7 @@ export default function CarbonAssetDetail() {
     loadMeta();
   }, [id]);
 
-  // 🟢 Comprar con ETH (requiere wallet conectada)
+  // 🟢 Comprar con ETH (requiere wallet)
   const handleBuyETH = async () => {
     try {
       if (!(window as any).ethereum) throw new Error("Instala MetaMask");
@@ -93,8 +94,8 @@ export default function CarbonAssetDetail() {
       const browserProvider = new ethers.BrowserProvider((window as any).ethereum);
       const signer = await browserProvider.getSigner();
       const contract = new ethers.Contract(
-        addresses.Plantarum1155,
-        Plantarum1155ABI,
+        addresses.Plantarum721,
+        Plantarum721ABI,
         signer
       );
 
@@ -112,15 +113,23 @@ export default function CarbonAssetDetail() {
   };
 
   if (loading)
-    return <p className="text-center text-green-300">⏳ Cargando crédito...</p>;
+    return (
+      <p className="text-center text-green-300">
+        ⏳ Cargando activo de conservación...
+      </p>
+    );
   if (!meta)
-    return <p className="text-center text-red-400">⚠️ Crédito no encontrado</p>;
+    return (
+      <p className="text-center text-red-400">
+        ⚠️ Activo no encontrado
+      </p>
+    );
 
   return (
     <main className="flex flex-col items-center px-4 py-8 min-h-[80vh]">
       {/* Título */}
       <h2 className="text-2xl md:text-3xl font-extrabold text-green-400 mb-6 text-center">
-        🌍 Crédito de Carbono – {meta.title}
+        🌱 Activo de Conservación – {meta.title}
       </h2>
 
       {/* Grid compacta */}
@@ -138,9 +147,12 @@ export default function CarbonAssetDetail() {
               📷 Sin imagen
             </div>
           )}
-          <h3 className="text-lg font-bold text-green-300 mb-2">📑 Información</h3>
+          <h3 className="text-lg font-bold text-green-300 mb-2">
+            📑 Información
+          </h3>
           <p className="text-green-100 text-sm">ID: {meta.id}</p>
           <p className="text-green-100 text-sm">Estado: {meta.estado}</p>
+          <p className="text-green-100 text-sm">Coords: {meta.coords}</p>
           <p className="text-green-100 text-sm">CCAA: {meta.comunidadAutonoma}</p>
           <p className="text-green-100 text-sm">Provincia: {meta.provincia}</p>
         </div>
@@ -149,7 +161,6 @@ export default function CarbonAssetDetail() {
         <div className="bg-green-900/70 p-4 rounded-xl shadow-lg border border-green-500/30">
           <h3 className="text-lg font-bold text-green-300 mb-3">💰 Económico</h3>
           <p className="text-green-100 text-sm">Precio: {meta.price} ETH</p>
-          <p className="text-green-100 text-sm">Supply: {meta.supply}</p>
           <p className="text-green-100 text-sm break-words">
             Propietario: {meta.owner}
           </p>
@@ -212,10 +223,10 @@ export default function CarbonAssetDetail() {
       {/* Botón volver */}
       <div className="mt-4">
         <Link
-          href="/marketplace/carbon"
+          href="/token/conservation/natura"
           className="px-5 py-2 bg-green-700 hover:bg-green-600 text-white rounded-lg shadow-md text-sm"
         >
-          ← Volver al Marketplace Carbon
+          ← Volver a Natura
         </Link>
       </div>
     </main>

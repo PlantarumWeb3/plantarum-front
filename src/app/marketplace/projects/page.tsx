@@ -7,6 +7,8 @@ import Link from "next/link";
 import { ethers } from "ethers";
 import addresses from "@/utils/addresses_eth";
 import Plantarum1155ABI from "@/abi/Plantarum1155.json";
+import { provider as readProvider } from "@/utils/web3Config"; //
+
 
 interface ProjectAsset {
   id: number;
@@ -24,49 +26,56 @@ export default function ProjectsMarketplacePage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const loadProjects = async () => {
-      try {
-        if (!(window as any).ethereum) return;
-        const provider = new ethers.BrowserProvider((window as any).ethereum);
-        const contract = new ethers.Contract(
-          addresses.Plantarum1155,
-          Plantarum1155ABI,
-          provider
-        );
-
-        const ids: bigint[] = await contract.getAllTokens();
-        const results: ProjectAsset[] = [];
-
-        for (const id of ids) {
-          try {
-            const meta = await contract.getProjectMeta(id);
-            if (meta.listed) {
-              results.push({
-                id: Number(id),
-                creator: meta.creator,
-                price: ethers.formatEther(meta.price),
-                supply: Number(meta.supply),
-                maturityDate: Number(meta.maturityDate),
-                yieldPercent: Number(meta.yieldPercent),
-                phases: Number(meta.phases),
-                listed: meta.listed,
-              });
-            }
-          } catch {
-            // si no es un ProjectMeta válido, lo ignoramos
-          }
-        }
-
-        setProjects(results);
-      } catch (err) {
-        console.error("❌ Error cargando proyectos:", err);
-      } finally {
-        setLoading(false);
+  const loadProjects = async () => {
+    try {
+      // 👇 provider: signer (si hay wallet) o público
+      let activeProvider: any;
+      if ((window as any).ethereum) {
+        const browserProvider = new ethers.BrowserProvider((window as any).ethereum);
+        activeProvider = browserProvider;
+      } else {
+        activeProvider = readProvider; // ✅ fallback público
       }
-    };
 
-    loadProjects();
-  }, []);
+      const contract = new ethers.Contract(
+        addresses.Plantarum1155,
+        Plantarum1155ABI,
+        activeProvider
+      );
+
+      const ids: bigint[] = await contract.getAllTokens();
+      const results: ProjectAsset[] = [];
+
+      for (const id of ids) {
+        try {
+          const meta = await contract.getProjectMeta(id);
+          if (meta.listed) {
+            results.push({
+              id: Number(id),
+              creator: meta.creator,
+              price: ethers.formatEther(meta.price),
+              supply: Number(meta.supply),
+              maturityDate: Number(meta.maturityDate),
+              yieldPercent: Number(meta.yieldPercent),
+              phases: Number(meta.phases),
+              listed: meta.listed,
+            });
+          }
+        } catch {
+          console.warn(`⚠️ Proyecto ${id} ignorado, metadata inválida`);
+        }
+      }
+
+      setProjects(results);
+    } catch (err) {
+      console.error("❌ Error cargando proyectos:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  loadProjects();
+}, []);
 
   return (
     <main className="p-10">

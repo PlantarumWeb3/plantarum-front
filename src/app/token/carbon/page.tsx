@@ -22,6 +22,7 @@ export default function CarbonPage() {
     verificationBody: "",
     expiryDate: "",
     certificadoCarbono: null,
+    estado: "",
   });
 
   const [loading, setLoading] = useState(false);
@@ -300,6 +301,25 @@ export default function CarbonPage() {
             className="input-dark"
             required
           />
+
+          {/* Estado */}
+          <select
+            name="estado"
+            value={form.estado}
+            onChange={handleChange}
+            className="input-dark"
+            required
+          >
+            <option value="">Selecciona estado</option>
+            <option value="activo">Activo</option>
+            <option value="en_validacion">En Validación</option>
+            <option value="finalizado">Finalizado</option>
+          </select>
+
+          <button type="submit" className="btn-green w-full mt-4">
+            🚀 Tokenizar Crédito de Carbono
+          </button>
+
 
           <button type="submit" className="btn-green w-full mt-4">
             🌍 Tokenizar Créditos de Carbono

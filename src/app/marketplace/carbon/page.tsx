@@ -1,4 +1,5 @@
 // src/app/marketplace/carbon/page.tsx
+
 "use client";
 
 import { useEffect, useState } from "react";
@@ -6,6 +7,8 @@ import Link from "next/link";
 import { ethers } from "ethers";
 import addresses from "@/utils/addresses_eth";
 import Plantarum1155ABI from "@/abi/Plantarum1155.json";
+import { provider as readProvider } from "@/utils/web3Config"; // 
+
 
 interface CarbonAsset {
   id: number;
@@ -25,51 +28,58 @@ export default function CarbonMarketplacePage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const loadCarbonCredits = async () => {
-      try {
-        if (!(window as any).ethereum) return;
-        const provider = new ethers.BrowserProvider((window as any).ethereum);
-        const contract = new ethers.Contract(
-          addresses.Plantarum1155,
-          Plantarum1155ABI,
-          provider
-        );
-
-        const ids: bigint[] = await contract.getAllTokens();
-        const results: CarbonAsset[] = [];
-
-        for (const id of ids) {
-          try {
-            const meta = await contract.getCarbonMeta(id);
-            if (meta.listed) {
-              results.push({
-                id: Number(id),
-                creator: meta.creator,
-                price: ethers.formatEther(meta.price),
-                supply: Number(meta.supply),
-                standard: meta.standard,
-                projectType: meta.projectType,
-                vintage: Number(meta.vintage),
-                verificationBody: meta.verificationBody,
-                expiryDate: Number(meta.expiryDate),
-                listed: meta.listed,
-              });
-            }
-          } catch {
-            // ignorar si no es un crédito de carbono válido
-          }
-        }
-
-        setCredits(results);
-      } catch (err) {
-        console.error("❌ Error cargando créditos de carbono:", err);
-      } finally {
-        setLoading(false);
+  const loadCarbonCredits = async () => {
+    try {
+      // 👇 provider: signer (si hay wallet) o público
+      let activeProvider: any;
+      if ((window as any).ethereum) {
+        const browserProvider = new ethers.BrowserProvider((window as any).ethereum);
+        activeProvider = browserProvider;
+      } else {
+        activeProvider = readProvider; // ✅ fallback público
       }
-    };
 
-    loadCarbonCredits();
-  }, []);
+      const contract = new ethers.Contract(
+        addresses.Plantarum1155,
+        Plantarum1155ABI,
+        activeProvider
+      );
+
+      const ids: bigint[] = await contract.getAllTokens();
+      const results: CarbonAsset[] = [];
+
+      for (const id of ids) {
+        try {
+          const meta = await contract.getCarbonMeta(id);
+          if (meta.listed) {
+            results.push({
+              id: Number(id),
+              creator: meta.creator,
+              price: ethers.formatEther(meta.price),
+              supply: Number(meta.supply),
+              standard: meta.standard,
+              projectType: meta.projectType,
+              vintage: Number(meta.vintage),
+              verificationBody: meta.verificationBody,
+              expiryDate: Number(meta.expiryDate),
+              listed: meta.listed,
+            });
+          }
+        } catch {
+          console.warn(`⚠️ Crédito ${id} ignorado, metadata inválida`);
+        }
+      }
+
+      setCredits(results);
+    } catch (err) {
+      console.error("❌ Error cargando créditos de carbono:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  loadCarbonCredits();
+}, []);
 
   return (
     <main className="flex flex-col items-center justify-center min-h-[75vh] px-6">

@@ -57,6 +57,7 @@ export default function ForestPage() {
     precioVenta: "",
     precioBaseSubasta: "",
     tiempoSubasta: "",
+    estado: "",
     observaciones: "",
     cumpleNormativaAutonoma: "",
     autoridadCompetente: "",
@@ -238,57 +239,57 @@ export default function ForestPage() {
             )}
 
             {/* Imágenes */}
-<div
-  className="input-dark"
-  style={{
-    padding: "12px",
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    cursor: "pointer",
-  }}
-  onClick={() => document.getElementById("imagenes")?.click()}
->
-  <span>🖼️ Imágenes (PNG/JPG máx 2MB, máx 3 archivos)</span>
-  <span style={{ color: "#9ca3af", fontSize: "12px" }}>
-    {imagenes.length > 0
-      ? `${imagenes.length} archivo(s) seleccionado(s)`
-      : "Ningún archivo seleccionado"}
-  </span>
-  <input
-    id="imagenes"
-    type="file"
-    accept=".png,.jpg"
-    multiple
-    onChange={(e) => handleFileChange(e, setImagenes, true)}
-    style={{ display: "none" }}
-  />
-</div>
+            <div
+              className="input-dark"
+              style={{
+                padding: "12px",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                cursor: "pointer",
+              }}
+              onClick={() => document.getElementById("imagenes")?.click()}
+            >
+              <span>🖼️ Imágenes (PNG/JPG máx 2MB, máx 3 archivos)</span>
+              <span style={{ color: "#9ca3af", fontSize: "12px" }}>
+                {imagenes.length > 0
+                  ? `${imagenes.length} archivo(s) seleccionado(s)`
+                  : "Ningún archivo seleccionado"}
+              </span>
+              <input
+                id="imagenes"
+                type="file"
+                accept=".png,.jpg"
+                multiple
+                onChange={(e) => handleFileChange(e, setImagenes, true)}
+                style={{ display: "none" }}
+              />
+            </div>
 
-{/* Selección de Especie */}
-<select
-  name="especiePrincipal"
-  value={form.especiePrincipal}
-  onChange={handleChange}
-  className="input-dark"
-  required
->
-  <option value="">Selecciona especie</option>
-  <option value="Pinus sylvestris">Pinus sylvestris</option>
-  <option value="Pinus pinaster">Pinus pinaster</option>
-  <option value="Eucalyptus globulus">Eucalyptus globulus</option>
-  <option value="Fagus sylvatica">Fagus sylvatica</option>
-  <option value="Pinus halepensis">Pinus halepensis</option>
-  <option value="Pinus nigra">Pinus nigra</option>
-  <option value="Quercus ilex">Quercus ilex</option>
-  <option value="Pinus radiata">Pinus radiata</option>
-  <option value="Quercus pyrenaica">Quercus pyrenaica</option>
-  <option value="Castanea sativa">Castanea sativa</option>
-  <option value="Pinus pinea">Pinus pinea</option>
-  <option value="Quercus suber">Quercus suber</option>
-  <option value="Resto de especies">Resto de especies</option>
-  <option value="Otras">Otras</option>
-</select>
+          {/* Selección de Especie */}
+          <select
+            name="especiePrincipal"
+            value={form.especiePrincipal}
+            onChange={handleChange}
+            className="input-dark"
+            required
+          >
+            <option value="">Selecciona especie</option>
+            <option value="Pinus sylvestris">Pinus sylvestris</option>
+            <option value="Pinus pinaster">Pinus pinaster</option>
+            <option value="Eucalyptus globulus">Eucalyptus globulus</option>
+            <option value="Fagus sylvatica">Fagus sylvatica</option>
+            <option value="Pinus halepensis">Pinus halepensis</option>
+            <option value="Pinus nigra">Pinus nigra</option>
+            <option value="Quercus ilex">Quercus ilex</option>
+            <option value="Pinus radiata">Pinus radiata</option>
+            <option value="Quercus pyrenaica">Quercus pyrenaica</option>
+            <option value="Castanea sativa">Castanea sativa</option>
+            <option value="Pinus pinea">Pinus pinea</option>
+            <option value="Quercus suber">Quercus suber</option>
+            <option value="Resto de especies">Resto de especies</option>
+            <option value="Otras">Otras</option>
+          </select>
 
 {/* Textarea si selecciona Otras */}
 {form.especiePrincipal === "Otras" && (
@@ -336,51 +337,51 @@ export default function ForestPage() {
           />
 
 
-{/* Con Transporte */}
-{form.tipoActivo && form.tipoActivo !== "monte" && (
-  <div>
-    <label className="text-green-200">¿Con Transporte?</label>
-    <div className="flex gap-4 mt-2">
-      <label>
-        <input
-          type="radio"
-          name="conTransporte"
-          value="Si"
-          checked={form.conTransporte === "Si"}
-          onChange={handleChange}
-        />{" "}
-        Sí
-      </label>
-      <label>
-        <input
-          type="radio"
-          name="conTransporte"
-          value="No"
-          checked={form.conTransporte === "No"}
-          onChange={handleChange}
-        />{" "}
-        No
-      </label>
-    </div>
-  </div>
-)}
+              {/* Con Transporte */}
+              {form.tipoActivo && form.tipoActivo !== "monte" && (
+                <div>
+                  <label className="text-green-200">¿Con Transporte?</label>
+                  <div className="flex gap-4 mt-2">
+                    <label>
+                      <input
+                        type="radio"
+                        name="conTransporte"
+                        value="Si"
+                        checked={form.conTransporte === "Si"}
+                        onChange={handleChange}
+                      />{" "}
+                      Sí
+                    </label>
+                    <label>
+                      <input
+                        type="radio"
+                        name="conTransporte"
+                        value="No"
+                        checked={form.conTransporte === "No"}
+                        onChange={handleChange}
+                      />{" "}
+                      No
+                    </label>
+                  </div>
+                </div>
+              )}
 
-            
-          {/* Superficie en m² */}
-<input
-  name="superficieM2"
-  value={form.superficieM2}
-  onChange={handleChange}
-  type="number"
-  placeholder="Superficie en m²"
-  className="input-dark"
-  disabled={form.tipoActivo !== "monte"} // 
-/>
-{form.superficieM2 && (
-  <p className="text-sm text-gray-300">
-    Equivalente: {superficieHa} ha
-  </p>
-)}
+                          
+                        {/* Superficie en m² */}
+              <input
+                name="superficieM2"
+                value={form.superficieM2}
+                onChange={handleChange}
+                type="number"
+                placeholder="Superficie en m²"
+                className="input-dark"
+                disabled={form.tipoActivo !== "monte"} // 
+              />
+              {form.superficieM2 && (
+                <p className="text-sm text-gray-300">
+                  Equivalente: {superficieHa} ha
+                </p>
+              )}
 
           
             {/* CCAA → Provincia → Municipio */}
@@ -658,6 +659,21 @@ export default function ForestPage() {
             />
           </div>
 
+            {/* Estado del activo */}
+            <select
+              name="estado"
+              value={form.estado}
+              onChange={handleChange}
+              className="input-dark"
+              required
+            >
+              <option value="">Selecciona estado del activo</option>
+              <option value="Disponible">Disponible</option>
+              <option value="En conservación">En conservación</option>
+              <option value="En explotación">En explotación</option>
+              <option value="En recuperación">En recuperación</option>
+              <option value="Protegido">Protegido</option>
+            </select>
 
           {/* Observaciones */}
           <textarea

@@ -19,6 +19,7 @@ export default function ProjectsPage() {
     yieldPercent: "",
     phases: "",
     tipoProyecto: "",
+    estado: "",
     observaciones: "",
   });
 
@@ -244,6 +245,21 @@ export default function ProjectsPage() {
             className="input-dark"
             disabled={!form.coordsPoligono}
           />
+
+          {/* Estado del Proyecto */}
+            <select
+              name="estado"
+              value={form.estado}
+              onChange={handleChange}
+              className="input-dark"
+              required
+            >
+              <option value="">Selecciona Estado</option>
+              <option value="planeado">En Planificación</option>
+              <option value="ejecucion">En Ejecución</option>
+              <option value="finalizado">Finalizado</option>
+              <option value="suspendido">Suspendido</option>
+            </select>
 
           {/* Observaciones */}
           <textarea

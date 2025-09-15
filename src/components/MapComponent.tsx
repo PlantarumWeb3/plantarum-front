@@ -1,4 +1,5 @@
 // src/components/MapComponent.tsx
+
 "use client";
 
 import { useEffect, useState } from "react";
@@ -8,6 +9,8 @@ import { ethers } from "ethers";
 import addresses from "@/utils/addresses_eth";
 import Plantarum721ABI from "@/abi/Plantarum721.json";
 import Plantarum1155ABI from "@/abi/Plantarum1155.json";
+import { provider as readProvider } from "@/utils/web3Config"; // 
+
 import { useMap } from "react-leaflet";
 import L from "leaflet";
 
@@ -89,78 +92,83 @@ export default function MapComponent() {
   const [region, setRegion] = useState<keyof typeof REGIONS>("España");
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
+  if (typeof window === "undefined") return;
 
-    (async () => {
-      try {
-        if (!(window as any).ethereum) return;
-
-        const provider = new ethers.BrowserProvider((window as any).ethereum);
-
-        const contract721 = new ethers.Contract(addresses.Plantarum721, Plantarum721ABI, provider);
-        const contract1155 = new ethers.Contract(addresses.Plantarum1155, Plantarum1155ABI, provider);
-
-        const results: any[] = [];
-
-        // 🔴 Forest / Conservation (721)
-        try {
-          const ids721: bigint[] = await contract721.getAllTokens();
-          for (const id of ids721) {
-            try {
-              const meta = await contract721.getTokenMeta(id);
-              const uri = await contract721.tokenURI(id);
-              const url = uri.replace("ipfs://", "https://ipfs.io/ipfs/");
-              const res = await fetch(url);
-              const data = await res.json();
-
-              if (meta.coords) {
-                const [lat, lng] = meta.coords.split(",").map((c: string) => parseFloat(c.trim()));
-                results.push({
-                  id: id.toString(),
-                  coords: [lat, lng] as [number, number],
-                  type: data.type || "forest",
-                  titulo: data.titulo || "Activo Forestal",
-                  estado: data.estadoLegal || "",
-                  tokenURI: uri,
-                });
-              }
-            } catch {}
-          }
-        } catch {}
-
-        // 🔵 Carbon + Projects (1155)
-        try {
-          const ids1155: bigint[] = await contract1155.getAllTokens();
-          for (const id of ids1155) {
-            try {
-              const uri = await contract1155.uri(id);
-              const url = uri.replace("ipfs://", "https://ipfs.io/ipfs/");
-              const res = await fetch(url);
-              const data = await res.json();
-
-              if ((data.type === "project" || data.type === "carbon") && data.coords) {
-                const [lat, lng] = data.coords.split(",").map((c: string) => parseFloat(c.trim()));
-                results.push({
-                  id: id.toString(),
-                  coords: [lat, lng] as [number, number],
-                  type: data.type,
-                  titulo: data.titulo || "Proyecto",
-                  estado: data.descripcion || "",
-                  tokenURI: uri,
-                });
-              }
-            } catch {}
-          }
-        } catch {}
-
-        setTokens(results);
-      } catch (err) {
-        console.error("❌ Error cargando tokens en el mapa:", err);
-      } finally {
-        setLoading(false);
+  (async () => {
+    try {
+      // 👇 Provider: signer si hay wallet, sino público
+      let activeProvider: any;
+      if ((window as any).ethereum) {
+        const browserProvider = new ethers.BrowserProvider((window as any).ethereum);
+        activeProvider = browserProvider;
+      } else {
+        activeProvider = readProvider; // ✅ fallback público
       }
-    })();
-  }, []);
+
+      const contract721 = new ethers.Contract(addresses.Plantarum721, Plantarum721ABI, activeProvider);
+      const contract1155 = new ethers.Contract(addresses.Plantarum1155, Plantarum1155ABI, activeProvider);
+
+      const results: any[] = [];
+
+      // 🔴 Forest / Conservation (721)
+      try {
+        const ids721: bigint[] = await contract721.getAllTokens();
+        for (const id of ids721) {
+          try {
+            const meta = await contract721.getTokenMeta(id);
+            const uri = await contract721.tokenURI(id);
+            const url = uri.replace("ipfs://", "https://ipfs.io/ipfs/");
+            const res = await fetch(url);
+            const data = await res.json();
+
+            if (meta.coords) {
+              const [lat, lng] = meta.coords.split(",").map((c: string) => parseFloat(c.trim()));
+              results.push({
+                id: id.toString(),
+                coords: [lat, lng] as [number, number],
+                type: data.tipoActivo || "forest", // 👈 usar tipoActivo del JSON
+                titulo: data.titulo || "Activo Forestal",
+                estado: data.estado || "No definido", // 👈 uniforme
+                tokenURI: uri,
+              });
+            }
+          } catch {}
+        }
+      } catch {}
+
+      // 🔵 Carbon + Projects (1155)
+      try {
+        const ids1155: bigint[] = await contract1155.getAllTokens();
+        for (const id of ids1155) {
+          try {
+            const uri = await contract1155.uri(id);
+            const url = uri.replace("ipfs://", "https://ipfs.io/ipfs/");
+            const res = await fetch(url);
+            const data = await res.json();
+
+            if ((data.tipoActivo === "project" || data.tipoActivo === "carbon") && data.coords) {
+              const [lat, lng] = data.coords.split(",").map((c: string) => parseFloat(c.trim()));
+              results.push({
+                id: id.toString(),
+                coords: [lat, lng] as [number, number],
+                type: data.tipoActivo, // 👈 usar tipoActivo
+                titulo: data.titulo || "Proyecto",
+                estado: data.estado || "No definido", // 👈 uniforme
+                tokenURI: uri,
+              });
+            }
+          } catch {}
+        }
+      } catch {}
+
+      setTokens(results);
+    } catch (err) {
+      console.error("❌ Error cargando tokens en el mapa:", err);
+    } finally {
+      setLoading(false);
+    }
+  })();
+}, []);
 
   const { center, zoom } = REGIONS[region];
 
