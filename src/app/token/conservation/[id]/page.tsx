@@ -24,6 +24,7 @@ interface Meta {
   pdfs?: { type: string; IpfsHash: string }[];
   comunidadAutonoma?: string;
   provincia?: string;
+  descripcion?:string;
 }
 
 export default function ConservationAssetDetail() {
@@ -195,28 +196,12 @@ export default function ConservationAssetDetail() {
         </div>
 
         {/* Cuadro 4: Acción */}
-        <div className="bg-green-900/70 p-4 rounded-xl shadow-lg border border-green-500/30 flex flex-col justify-between">
-          <h3 className="text-lg font-bold text-green-300 mb-3">🛒 Acción</h3>
-          <div className="flex-1 flex items-center justify-center">
-            <button
-              onClick={handleBuyETH}
-              className="px-4 py-2 bg-green-500 hover:bg-green-400 text-white font-bold rounded-lg shadow-md transition text-sm"
-            >
-              💸 Comprar con ETH
-            </button>
-          </div>
-          {txHash && (
-            <p className="mt-3 text-green-400 text-xs break-words">
-              ✅ TX:{" "}
-              <a
-                href={`https://sepolia.etherscan.io/tx/${txHash}`}
-                target="_blank"
-                className="underline"
-              >
-                {txHash}
-              </a>
-            </p>
-          )}
+        {/* Cuadro 4: Detalles de Conservación */}
+        <div className="bg-green-900/70 p-4 rounded-xl shadow-lg border border-green-500/30">
+          <h3 className="text-lg font-bold text-green-300 mb-3">🌱 Detalles de Conservación</h3>
+          <p className="text-green-100 text-sm">
+            {meta.descripcion || "Proyecto de conservación sin descripción adicional"}
+          </p>
         </div>
       </div>
 
