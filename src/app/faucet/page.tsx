@@ -48,7 +48,7 @@ export default function FaucetPage() {
           <li>Abre tu extensión de <strong>MetaMask</strong>.</li>
           <li>Posiciona la red de Pruebas Ethereum <strong>Sepolia</strong>.</li>
           <li>Haz clic en <em>"Importar token"</em>.</li>
-          <li>Pega esta dirección de contrato en el campo correspondiente:</li>
+          <li>Copia y Pega esta dirección de contrato en el campo correspondiente:</li>
         </ul>
         <p className="mt-2 text-green-400 break-all font-mono">
           0x14bb43297537ecAF30657216be7EC651c90a123f
