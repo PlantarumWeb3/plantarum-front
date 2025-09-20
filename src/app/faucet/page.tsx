@@ -46,6 +46,7 @@ export default function FaucetPage() {
         <p className="mb-2 font-bold">📌 Antes de usar el faucet:</p>
         <ul className="list-disc pl-5 space-y-1">
           <li>Abre tu extensión de <strong>MetaMask</strong>.</li>
+          <li>Posiciona la red de Pruebas Ethereum <strong>Sepolia</strong>.</li>
           <li>Haz clic en <em>"Importar token"</em>.</li>
           <li>Pega esta dirección de contrato en el campo correspondiente:</li>
         </ul>
