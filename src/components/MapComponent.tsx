@@ -1,4 +1,5 @@
 // src/components/MapComponent.tsx
+
 "use client";
 
 import { useEffect, useState } from "react";
@@ -6,6 +7,7 @@ import dynamic from "next/dynamic";
 import "leaflet/dist/leaflet.css";
 import { ethers } from "ethers";
 import addresses from "@/utils/addresses_eth";
+import { provider } from "@/utils/web3Config"; // 👈 provider público (Alchemy)
 import Plantarum721ABI from "@/abi/Plantarum721.json";
 import Plantarum1155ABI from "@/abi/Plantarum1155.json";
 import { useMap } from "react-leaflet";
@@ -88,79 +90,101 @@ export default function MapComponent() {
   const [loading, setLoading] = useState(true);
   const [region, setRegion] = useState<keyof typeof REGIONS>("España");
 
-  useEffect(() => {
-    if (typeof window === "undefined") return;
+  // useEffect dentro de MapComponent
 
-    (async () => {
-      try {
-        if (!(window as any).ethereum) return;
+useEffect(() => {
+  if (typeof window === "undefined") return;
 
-        const provider = new ethers.BrowserProvider((window as any).ethereum);
+  (async () => {
+    try {
+      let activeProvider: any;
 
-        const contract721 = new ethers.Contract(addresses.Plantarum721, Plantarum721ABI, provider);
-        const contract1155 = new ethers.Contract(addresses.Plantarum1155, Plantarum1155ABI, provider);
-
-        const results: any[] = [];
-
-        // 🔴 Forest / Conservation (721)
-        try {
-          const ids721: bigint[] = await contract721.getAllTokens();
-          for (const id of ids721) {
-            try {
-              const meta = await contract721.getTokenMeta(id);
-              const uri = await contract721.tokenURI(id);
-              const url = uri.replace("ipfs://", "https://ipfs.io/ipfs/");
-              const res = await fetch(url);
-              const data = await res.json();
-
-              if (meta.coords) {
-                const [lat, lng] = meta.coords.split(",").map((c: string) => parseFloat(c.trim()));
-                results.push({
-                  id: id.toString(),
-                  coords: [lat, lng] as [number, number],
-                  type: data.type || "forest",
-                  titulo: data.titulo || "Activo Forestal",
-                  estado: data.estadoLegal || "",
-                  tokenURI: uri,
-                });
-              }
-            } catch {}
-          }
-        } catch {}
-
-        // 🔵 Carbon + Projects (1155)
-        try {
-          const ids1155: bigint[] = await contract1155.getAllTokens();
-          for (const id of ids1155) {
-            try {
-              const uri = await contract1155.uri(id);
-              const url = uri.replace("ipfs://", "https://ipfs.io/ipfs/");
-              const res = await fetch(url);
-              const data = await res.json();
-
-              if ((data.type === "project" || data.type === "carbon") && data.coords) {
-                const [lat, lng] = data.coords.split(",").map((c: string) => parseFloat(c.trim()));
-                results.push({
-                  id: id.toString(),
-                  coords: [lat, lng] as [number, number],
-                  type: data.type,
-                  titulo: data.titulo || "Proyecto",
-                  estado: data.descripcion || "",
-                  tokenURI: uri,
-                });
-              }
-            } catch {}
-          }
-        } catch {}
-
-        setTokens(results);
-      } catch (err) {
-        console.error("❌ Error cargando tokens en el mapa:", err);
-      } finally {
-        setLoading(false);
+      if ((window as any).ethereum) {
+        // 👉 Con wallet conectada
+        const browserProvider = new ethers.BrowserProvider((window as any).ethereum);
+        activeProvider = await browserProvider.getSigner();
+      } else {
+        // 👉 Sin wallet → usamos provider público (Alchemy)
+        activeProvider = provider;
       }
-    })();
-  }, []);
+
+      const contract721 = new ethers.Contract(addresses.Plantarum721, Plantarum721ABI, activeProvider);
+      const contract1155 = new ethers.Contract(addresses.Plantarum1155, Plantarum1155ABI, activeProvider);
+
+      const results: any[] = [];
+
+      // 🌲 Forest + Conservation (721)
+      try {
+        const ids721: bigint[] = await contract721.getAllTokens();
+        for (const id of ids721) {
+          try {
+            const meta = await contract721.getTokenMeta(id);
+            const uri = await contract721.tokenURI(id);
+            const url = uri.replace("ipfs://", "https://ipfs.io/ipfs/");
+            const res = await fetch(url);
+            const data = await res.json();
+
+            if (meta.coords) {
+              const [lat, lng] = meta.coords.split(",").map((c: string) => parseFloat(c.trim()));
+              results.push({
+                id: id.toString(),
+                coords: [lat, lng] as [number, number],
+                tipoActivo: meta.tipoActivo || "conservation", // viene del contrato 721
+                titulo: data.titulo || "Activo Forestal",
+                estado: data.estado || "No definido",
+                tokenURI: uri,
+                source: "721",
+              });
+            }
+          } catch (err) {
+            console.warn("Error procesando 721 id", id.toString(), err);
+          }
+        }
+      } catch (err) {
+        console.error("Error cargando tokens 721:", err);
+      }
+
+      // 🔵 Carbon + Projects (1155)
+      try {
+        const ids1155: bigint[] = await contract1155.getAllTokens();
+        for (const id of ids1155) {
+          try {
+            const uri = await contract1155.uri(id);
+            const url = uri.replace("ipfs://", "https://ipfs.io/ipfs/");
+            const res = await fetch(url);
+            const data = await res.json();
+
+            if (data.coords) {
+              const [lat, lng] = data.coords.split(",").map((c: string) => parseFloat(c.trim()));
+              results.push({
+                id: id.toString(),
+                coords: [lat, lng] as [number, number],
+                type:
+                  data.tipoActivo ||
+                  (data.titulo?.toLowerCase().includes("carbon") ? "carbon" : "project"),
+                titulo: data.titulo || "Proyecto",
+                estado: data.estado || "No definido",
+                tokenURI: uri,
+                source: "1155",
+              });
+            }
+          } catch (err) {
+            console.warn("Error procesando 1155 id", id.toString(), err);
+          }
+        }
+      } catch (err) {
+        console.error("Error cargando tokens 1155:", err);
+      }
+
+      console.log("✅ Tokens combinados:", results);
+      setTokens(results);
+    } catch (err) {
+      console.error("❌ Error general en mapa:", err);
+    } finally {
+      setLoading(false);
+    }
+  })();
+}, []);
 
   const { center, zoom } = REGIONS[region];
 
@@ -194,36 +218,41 @@ export default function MapComponent() {
             />
 
             {tokens.map((t, idx) => {
-              const icon =
-                t.type === "forest"
-                  ? icons.forest
-                  : t.type === "carbon"
-                  ? icons.carbon
-                  : t.type === "project"
-                  ? icons.project
-                  : icons.conservation;
+                    // 🔑 Normalizamos tipoActivo a minúsculas
+                    const tipo = (t.tipoActivo || t.type || "").toLowerCase();
 
-              return (
-                <Marker key={idx} position={t.coords} icon={icon}>
-                  <Popup>
-                    <div className="text-sm">
-                      <p className="font-bold">{t.titulo}</p>
-                      <p>📍 {t.coords[0]}, {t.coords[1]}</p>
-                      <p>📌 Estado: {t.estado}</p>
-                      <p>ID: {t.id}</p>
-                      <a
-                        href={`https://ipfs.io/ipfs/${t.tokenURI.replace("ipfs://", "")}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-green-400 underline"
-                      >
-                        🌐 Ver Metadata en IPFS
-                      </a>
-                    </div>
-                  </Popup>
-                </Marker>
-              );
-            })}
+                    const icon =
+                      tipo === "conservation"
+                        ? icons.conservation
+                        : tipo === "forest"
+                        ? icons.forest
+                        : tipo === "carbon"
+                        ? icons.carbon
+                        : tipo === "project"
+                        ? icons.project
+                        : icons.conservation; // 👈 fallback verde
+
+                    return (
+                      <Marker key={idx} position={t.coords} icon={icon}>
+                        <Popup>
+                          <div className="text-sm">
+                            <p className="font-bold">{t.titulo}</p>
+                            <p>📍 {t.coords[0]}, {t.coords[1]}</p>
+                            <p>📌 Estado: {t.estado}</p>
+                            <p>ID: {t.id} ({t.source})</p> {/* 👈 para debug */}
+                            <a
+                              href={`https://ipfs.io/ipfs/${t.tokenURI.replace("ipfs://", "")}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-green-400 underline"
+                            >
+                              🌐 Ver Metadata en IPFS
+                            </a>
+                          </div>
+                        </Popup>
+                      </Marker>
+                    );
+                  })}
           </MapContainer>
         </div>
       )}
